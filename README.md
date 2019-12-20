@@ -1,5 +1,9 @@
 # CS/COE 1520 Project 1
 
+## Visualization:
+
+![Image of HTML Battleship](https://raw.githubusercontent.com/mattchoi2/Pure-JS-Battleship/master/battleship.PNG)
+
 ## Goal:
 To gain experience building interactive web applications through the use of JavaScript and the DOM.
 
