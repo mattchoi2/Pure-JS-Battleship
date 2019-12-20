@@ -1,4 +1,4 @@
-# CS/COE 1520 Project 1
+# Pure JavaScript Battleship
 
 ## Visualization:
 
