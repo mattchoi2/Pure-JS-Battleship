@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+  <title>BattleShip</title>
+  <style>
+    #main-body table tbody tr td {
+      text-align:center;
+    }
+
+    .popup {
+      position:fixed;
+      top:0px;
+      height:100vh;
+      width:80%;
+      margin-left:-40%;
+      left:50%;
+      background-color:lightgray;
+    }
+
+    .popup p {
+      margin-top:30vh;
+      font-size:24px;
+      text-align:center;
+    }
+
+    #main-body table {
+      margin:auto;
+    }
+
+    button {
+      display:block;
+      margin:auto;
+    }
+
+    .hit {
+      background-color:red;
+      color:white;
+    }
+
+    h1 {
+      text-align:center;
+      /* lmao */
+      font-family: "Comic Sans MS", cursive, sans-serif;
+    }
+
+    td {
+      background-color:lightblue;
+    }
+
+    .clickable:hover {
+      background-color:blue;
+      cursor:pointer;
+    }
+
+    .missed {
+      background-color:white;
+    }
+
+    tr td:first-child, th {
+      background-color:black;
+      padding:3px;
+      color:white;
+    }
+
+    .victory-message {
+      color:green;
+      text-align:center;
+      margin-top:40vh;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="main-body"></div>
+</body>
+
+</html>
+
+<script>
+
+var boards = {};
+var hits = {};
+
+function runBattleShip() {
+  var board1 = new Array(10);
+  var board2 = new Array(10);
+  for (var r = 0; r < 10; r++) {
+    board1[r] = new Array(10);
+    board2[r] = new Array(10);
+    for (var c = 0; c < 10; c++) {
+      board1[r][c] = 0; // make sure every index is initialized
+      board2[r][c] = 0;
+    }
+  }
+
+  var boardsArr = new Array(board1, board2);
+  var players = new Array(2); // new array of length 2
+  for (var i = 0; i < 2; i++) { // We just need this to run for each player for init
+    players[i] = prompt("Player " + (i + 1) + " please enter your name:");
+    boards[players[i]] = boardsArr[i]; // Use the player name as the key for the object
+    localStorage.setItem(players[i] + "-score", 0);
+    var placement = prompt("Please enter the string to place your battleships:");
+    var aircraft = placement.match(/[A][:(][A-Z][0-9]-[A-Z][0-9][)]?/g);
+    var submarine = placement.match(/[S][:(][A-Z][0-9]-[A-Z][0-9][)]?/g);
+    var battleship = placement.match(/[B][:(][A-Z][0-9]-[A-Z][0-9][)]?/g);
+
+    // Initialize hit counts
+    var hitList = {};
+    hitList["Aircraft Carrier"] = 5;
+    hitList["Battleship"] = 4;
+    hitList["Submarine"] = 3;
+    hits[players[i]] = hitList;
+
+    if (!verifyPlacement(aircraft, submarine, battleship, players[i])) { return; }
+
+    var num = 0;
+    for (coords of new Array(aircraft, battleship, submarine)) {
+      twoCoords = coords.pop().match(/[A-Z][0-9]/g); // Get all the [Letter][Number] combos
+      boards[players[i]] = placeShip(boards[players[i]], twoCoords[0], twoCoords[1], num++); // These represent begin and end
+    }
+  }
+
+  switchPlayers(players[0], players[1]);
+}
+
+function verifyPlacement(aircraft, submarine, battleship, player) {
+  // Check to see if the boat exists...
+  if (aircraft == null) {
+    alert("You forgot to add a aircraft!  Restart the program."); return false;
+  } else if (submarine == null) {
+    alert("You forgot to add a submarine!  Restart the program."); return false;
+  } else if (battleship == null) {
+    alert("You forgot to add a battleship!  Restart the program."); return false;
+  }
+  // Check to see if the boat is the correct length...
+  var battleships = ["Submarine", "Battleship", "Aircraft Carrier"];
+  var num = 0;
+  for (coords of new Array(submarine, battleship, aircraft)) {
+    var letterNum = coords[0].match(/[A-Z][0-9]/g); // Get all the [Letter][Number] combos
+    var begin = letterNum[0].split('');
+    var end = letterNum[1].split('');
+    var beginCoords = new Array(begin[0].toLowerCase().charCodeAt(0) - 97, begin[1] - 1);
+    var endCoords = new Array(end[0].toLowerCase().charCodeAt(0) - 97, end[1] - 1);
+    var distance = 1;
+    for (var i = 0; i < beginCoords.length; i++) {
+      distance += Math.abs(beginCoords[i] - endCoords[i]);
+    }
+    if (distance != hits[player][battleships[num]]) {
+      alert("The length for " + battleships[num] + " is " + distance + ".  It should be " + hits[player][battleships[num]]);
+      return false;
+    }
+    num++;
+  }
+  return true;
+}
+
+// The board, where to begin placement, where to end placement
+function placeShip(board, begin, end, num) {
+  var begin = begin.split('');
+  var end = end.split('');
+  var currShip = new Array("A", "B", "S");
+  for (var c = 0; c < board.length; c++) { // columns are letters
+    for (var r = 0; r < board[c].length; r++) { // rows are numbers
+      var beginCoords = new Array(begin[0].toLowerCase().charCodeAt(0) - 97, begin[1] - 1);
+      var endCoords = new Array(end[0].toLowerCase().charCodeAt(0) - 97, end[1] - 1);
+      if (beginCoords[0] <= c && beginCoords[1] <= r) {
+        if (endCoords[0] >= c && endCoords[1] >= r) {
+          board[c][r] = currShip[num];
+        }
+      }
+    }
+  }
+  return board;
+}
+
+function printBoard(board, isOpponent, boardOwner) {
+  var base = document.getElementById("main-body");
+  var table = document.createElement("table");
+  var header = document.createElement("thead");
+  var body = document.createElement("tbody");
+  var letters = new Array("A", "B", "C", "D", "E", "F", "G", "H", "I", "J");
+  // We need a blank <th></th> to offset for the labels on the rows (1-10)
+  var caption = document.createElement("caption");
+  caption.innerHTML = boardOwner + "'s Board";
+  table.appendChild(caption);
+  base.appendChild(table).appendChild(header).appendChild(document.createElement("tr")).appendChild(document.createElement("th"));
+  table.appendChild(body);
+
+  for (var c = 0; c < board.length; c++) {
+    // Step 1.  Create the header
+    var col = document.createElement("th");
+    col.innerHTML = letters[c];
+    header.firstChild.appendChild(col);
+    // Step 2.  Fill the body
+    var row = document.createElement("tr");
+    var rowLabel = document.createElement("td");
+    rowLabel.innerHTML = (c + 1).toString().bold(); // start counting at 1 for the label
+    row.appendChild(rowLabel);
+    for (var r = 0; r < board.length; r++) {
+      var waterTile = document.createElement("td");
+      if (isOpponent) {
+        if (board[r][c] != "X" && board[r][c] != "M") { // You can't shoot somewhere you already shot
+          waterTile.classList.add("clickable");
+          waterTile.setAttribute("onclick", "fire(" + r + ", " + c + ", '" + boardOwner + "')");
+        }
+        waterTile.innerHTML = "";
+      } else {
+        if (board[r][c] != 0 && board[r][c] != "M") { waterTile.innerHTML = board[r][c] };
+      }
+      if (board[r][c] == "X") { waterTile.classList.add("hit"); }
+      if (board[r][c] == "M") { waterTile.classList.add("missed"); }
+      row.appendChild(waterTile);
+    }
+    body.appendChild(row);
+  }
+}
+
+function fire(r, c, enemyName) { // Fire at this player's board, record the hit
+  var board = boards[enemyName];
+  var letter = String.fromCharCode(r + 97).toUpperCase();
+  var playerName;
+  for (var key in boards) { // Just to get the enemies name, run thru all keys
+    if (boards.hasOwnProperty(key)) {
+      if (key != enemyName) { playerName = key; }
+    }
+  }
+
+  if (board[r][c] != 0) { // They hit!
+    alert("The shot at " + letter + (c + 1) + " hit!");
+    localStorage.setItem(playerName + "-score", parseInt(localStorage.getItem(playerName + "-score")) + 2);
+    for (var key in hits[enemyName]) {
+      if (board[r][c] == key.substring(0, 1)) {
+        hits[enemyName][key] -= 1;
+        if (hits[enemyName][key] == 0) { alert("Congratulations!  You sunk the " + key + "!"); }
+      }
+    }
+    board[r][c] = "X";
+  } else { // They miss :(
+    alert("The shot at " + letter + (c + 1) + " missed.");
+    board[r][c] = "M";
+  }
+
+  if (checkForVictory(board, playerName, enemyName) == false) {
+    // Continue with the game if last move didn't cause a win
+    promptNextTurn(playerName, enemyName);
+  }
+}
+
+function checkForVictory(board, winner, loser) {
+  for (var c = 0; c < board.length; c++) {
+    for (var r = 0; r < board.length; r++) {
+      var curr = board[r][c];
+      if (curr == "A" || curr == "B" || curr == "S") {
+        return false;
+      }
+    }
+  }
+  // If we couldn't find a ship (they have all become X's or hits) the possible winner won!
+  var body = document.getElementById("main-body");
+  body.innerHTML = "";
+  var msg = document.createElement("h1");
+  msg.classList.add("victory-message");
+  var winnerScore = localStorage.getItem(winner + "-score");
+  var loserScore = localStorage.getItem(loser + "-score");
+  msg.innerHTML = "Congratulations " + winner + "!  You defeated " + loser + " in Battleship!";
+  msg.innerHTML += "<br/>Final Score for " + winner + ": " + winnerScore;
+  msg.innerHTML += "<br/>Final Score for " + loser + ": " + loserScore;
+
+  // Keep the top 10 scores in memory
+  var topScores;
+  if (localStorage.getItem("topScores") === null) {
+    topScores = {};
+  } else {
+    topScores = JSON.parse(localStorage.getItem("topScores"));
+  }
+  topScores[winner] = winnerScore;
+  topScores[loser] = loserScore;
+  localStorage.setItem("topScores", JSON.stringify(topScores));
+  alert("TOP 10 PLAYERS: \n" + localStorage.getItem("topScores"));
+  body.appendChild(msg);
+  return true;
+}
+
+function promptNextTurn(player, enemy) {
+  var popup = document.createElement("div");
+  popup.classList.add("popup");
+  var text = document.createElement("p");
+  text.textContent = player + "'s turn has finished, please give your opponent the computer";
+  var body = document.getElementById("main-body");
+  body.appendChild(popup).appendChild(text);
+  var nextTurnBtn = document.createElement("button");
+  nextTurnBtn.textContent = "Click to begin " + enemy + "'s turn";
+  nextTurnBtn.setAttribute("onclick", "switchPlayers('" + enemy + "', '" + player + "')");
+  popup.appendChild(nextTurnBtn);
+}
+
+function switchPlayers(toPlayer, fromPlayer) {
+  var body = document.getElementById("main-body");
+  body.innerHTML = "";
+  var title = document.createElement("h1");
+  title.textContent = toPlayer + "'s Turn";
+  body.appendChild(title);
+  // Print the enemies board first
+  printBoard(boards[fromPlayer], true, fromPlayer);
+  body.appendChild(document.createElement("hr"));
+  printBoard(boards[toPlayer], false, toPlayer);
+  // Then print your board
+}
+runBattleShip();
+
+
+</script>
